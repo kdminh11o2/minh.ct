@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f7;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            color: #1d1d1f;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button.long {
+            background-color: #006834;
+            color: white;
+        }
+
+        button.long:hover {
+            background-color: #005bb5;
+        }
+
+        button.short {
+            background-color: #d70040;
+            color: white;
+        }
+
+        button.short:hover {
+            background-color: #a60030;
+        }
+
+        button.option {
+            background-color: #0071e3;
+            color: white;
+        }
+
+        button.undo {
+            background-color: #646464;
+            color: rgb(255, 255, 255);
+            border: 1px solid #ccc;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .output, .history {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-text {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .history h2 {
+            margin-top: 0;
+            color: #1d1d1f;
+        }
+
+        .buttons button {
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            input {
+                font-size: 14px;
+            }
+
+            button {
+                font-size: 14px;
+            }
+        }
+
+        #reinvestmentModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #reinvestmentOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #reinvestmentModal {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0;
+            transform: translate(-50%, -60%);
+        }
+
+        #reinvestmentModal[style*="display: block;"] {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
+
+        #tradeModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #tradeOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #tradeSummaryText, #tradeHistoryText {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            height: 150px;
+            overflow-y: auto;
+        }
+        #tradeSummaryText div, #tradeHistoryText div {
+            margin-bottom: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        button {
+            background-color: #0071e3;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background-color: #005bb5;
+        }
+        button.undo {
+            background-color: #747474;
+        }
+        button.undo:hover {
+            background-color: #a60030;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            #tradeModal {
+                width: 95%;
+            }
+        }                       
+
+    </style>
+
+    <script>
+        let cumulativeProfit = 0;
+        let transactionHistory = [];
+        let withdrawalHistory = [];
+        let undoHistory = [];
+        let reinvestmentBalance = 0;
+        let reinvestmentHistory = [];
+        let undoReinvestmentHistory = [];
+
+        function calculateProfit(type) {
+            const usdtInvested = parseFloat(document.getElementById("usdtInvested").value);
+            const leverage = parseInt(document.getElementById("leverage").value);
+            const startDay = parseInt(document.getElementById("startDay").value);
+            const startMonth = parseInt(document.getElementById("startMonth").value);
+            const endDay = parseInt(document.getElementById("endDay").value);
+            const endMonth = parseInt(document.getElementById("endMonth").value);
+            const startPosition = parseFloat(document.getElementById("startPosition").value);
+            const endPosition = parseFloat(document.getElementById("endPosition").value);
+
+            if (isNaN(usdtInvested) || isNaN(leverage) || isNaN(startDay) || isNaN(startMonth) || 
+                isNaN(endDay) || isNaN(endMonth) || isNaN(startPosition) || isNaN(endPosition)) {
+                alert("Please ensure all inputs are valid and filled correctly.");
+                return;
+            }
+
+            const totalInvestment = usdtInvested * leverage;
+            const totalTokens = totalInvestment / startPosition;
+            const daysDifference = Math.ceil(
+                new Date(2024, endMonth - 1, endDay) - new Date(2024, startMonth - 1, startDay)
+            ) / (1000 * 60 * 60 * 24) + 1;
+
+            let profit;
+            let risk;
+
+            if (type === 'long') {
+                profit = ((totalTokens * endPosition) - totalInvestment) - 
+                    ((totalInvestment - usdtInvested) * 0.0009589 * daysDifference);
+                risk = (totalInvestment - usdtInvested) / totalTokens;
+            } else {
+                const borrowedAmount = ((totalInvestment - usdtInvested) / startPosition) * 0.00032877 * daysDifference * endPosition;
+                profit = (totalInvestment - (totalTokens * endPosition)) - borrowedAmount;
+                risk = (totalInvestment + usdtInvested) / totalTokens;
+            }
+
+            if (transactionHistory.length === 0) {
+                cumulativeProfit = usdtInvested; 
+            }
+
+            cumulativeProfit += profit; 
+
+            document.getElementById("riskValue").innerText = risk.toFixed(2);
+
+            const currentDate = new Date(2024, endMonth - 1, endDay);
+            const newTransaction = { date: currentDate, profit, cumulativeProfit, totalInvestment, totalTokens };
+            undoHistory.push({ action: 'add', transaction: newTransaction });
+            const token = document.getElementById("token").value.trim();
+            newTransaction.token = token; 
+            transactionHistory.push(newTransaction);
+
+            document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
+
+            updateVolume30Days(currentDate);
+            updateHistory();
+        }
+
+        function updateVolume30Days(latestDate) {
+            const thirtyDaysAgo = new Date(latestDate);
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const filteredTransactions = transactionHistory.filter(tx => tx.date >= thirtyDaysAgo && tx.date <= latestDate);
+            const volume30Days = filteredTransactions.reduce((sum, tx) => sum + tx.totalInvestment, 0);
+            const totalTokens30Days = filteredTransactions.reduce((sum, tx) => sum + tx.totalTokens, 0);
+
+            document.getElementById("volume30Days").innerText = `$${Math.round(volume30Days).toLocaleString()}`;
+            document.getElementById("totalTokens30Days").innerText = `${Math.round(totalTokens30Days).toLocaleString()} tokens`;
+        }
+
+        function updateHistory() {
+            const historyElement = document.getElementById("historyText");
+            historyElement.innerHTML = "";
+
+            transactionHistory.forEach(tx => {
+                const date = `${tx.date.getDate()}-${tx.date.getMonth() + 1}`;
+                const cumulativeProfitText = `$${Math.round(tx.cumulativeProfit).toLocaleString()}`;
+                historyElement.innerHTML += `<div>Token: ${tx.token || "N/A"}, Date: ${date}, Profit: $${Math.round(tx.profit).toLocaleString()}, Cumulative Profit: ${cumulativeProfitText}</div>`;
+            });
+        }
+
+        function withdraw() {
+            const amount = parseFloat(document.getElementById("withdrawAmount").value);
+            const withdrawDay = parseInt(document.getElementById("withdrawDay").value);
+            const withdrawMonth = parseInt(document.getElementById("withdrawMonth").value);
+
+            if (isNaN(amount) || isNaN(withdrawDay) || isNaN(withdrawMonth)) {
+                alert("Please ensure all inputs are valid and filled correctly.");
+                return;
+            }
+
+            if (amount > cumulativeProfit) {
+                alert("Amount exceeds cumulative profit.");
+                return;
+            }
+
+            cumulativeProfit -= amount;
+            const vndEquivalent = amount * 25000;
+            const newWithdrawal = { date: `${withdrawDay}-${withdrawMonth}`, amount, vndEquivalent };
+            undoHistory.push({ action: 'withdraw', withdrawal: newWithdrawal });
+            withdrawalHistory.push(newWithdrawal);
+            document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
+            updateWithdrawHistory();
+        }
+
+        function updateWithdrawHistory() {
+            const withdrawElement = document.getElementById("withdrawHistoryText");
+            withdrawElement.innerHTML = "";  
+
+            const exchangeRate = 25000;  
+            let totalWithdrawn = 0;  
+
+        
+            withdrawalHistory.forEach(wd => {
+                totalWithdrawn += wd.amount;
+                const vndEquivalent = wd.amount * exchangeRate;  
+                withdrawElement.innerHTML += `<div>Date: ${wd.date}, Amount: $${formatNumber(wd.amount)} (~${formatNumber(vndEquivalent)} VND)</div>`;
+            });
+
+            const totalVndEquivalent = totalWithdrawn * exchangeRate;
+            const totalText = `<h3>Total Withdrawn: $${Math.round(totalWithdrawn).toLocaleString()} (~${Math.round(totalVndEquivalent).toLocaleString()} VND)</h3>`;
+            withdrawElement.innerHTML = totalText + withdrawElement.innerHTML;
+        }
+        let transferHistory = [];
+
+        function openTransferModal() {
+            closeOptionModal();
+            document.getElementById("transferModal").style.display = "block";
+            document.getElementById("transferOverlay").style.display = "block";
+            updateTransferHistory(); 
+        }
+
+        function closeTransferModal() {
+            document.getElementById("transferModal").style.display = "none";
+            document.getElementById("transferOverlay").style.display = "none";
+        }
+
+        function confirmTransfer() {
+            const amount = parseFloat(document.getElementById("transferAmount").value);
+            const transferDay = parseInt(document.getElementById("transferDay").value);
+            const transferMonth = parseInt(document.getElementById("transferMonth").value);
+
+            if (isNaN(amount) || isNaN(transferDay) || isNaN(transferMonth)) {
+                alert("Please ensure all inputs are valid and filled correctly.");
+                return;
+            }
+
+            if (amount > cumulativeProfit) {
+                alert("Amount exceeds cumulative profit.");
+                return;
+            }
+
+            cumulativeProfit -= amount;
+
+            reinvestmentBalance += amount;
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${Math.round(reinvestmentBalance).toLocaleString()}`;
+
+            const newTransfer = { date: `${transferDay}-${transferMonth}`, amount };
+            transferHistory.push(newTransfer);
+
+            document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
+            updateTransferHistory();
+        }
+
+        function updateTransferHistory() {
+            const transferElement = document.getElementById("transferHistoryText");
+            transferElement.innerHTML = "";
+
+            if (transferHistory.length === 0) {
+                transferElement.innerHTML = "<div>No transfer history available.</div>";
+                return;
+            }
+
+            transferHistory.forEach(tx => {
+                transferElement.innerHTML += `<div>Date: ${tx.date}, Amount: $${Math.round(tx.amount).toLocaleString()}</div>`;
+            });
+        }
+
+        function undo() {
+            const lastAction = undoHistory.pop();
+                if (!lastAction) {
+                    alert("No actions to undo.");
+                        return;
+                }
+
+                if (lastAction.action === 'add') {
+                    const { transaction } = lastAction;
+                    transactionHistory = transactionHistory.filter(tx => tx !== transaction);
+                    cumulativeProfit -= transaction.profit;
+                } else if (lastAction.action === 'withdraw') {
+                    const { withdrawal } = lastAction;
+                    withdrawalHistory = withdrawalHistory.filter(wd => wd !== withdrawal);
+                    cumulativeProfit += withdrawal.amount;
+                }
+
+                document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
+                updateHistory();
+                updateWithdrawHistory();
+        }
+
+        function openModal() {
+            closeOptionModal();
+            document.getElementById("withdrawModal").style.display = "block";
+            document.getElementById("modalOverlay").style.display = "block";
+        }
+
+        function closeModal() {
+            closeOptionModal();
+            document.getElementById("withdrawModal").style.display = "none";
+            document.getElementById("modalOverlay").style.display = "none";
+        }
+
+        function confirmWithdraw() {
+            const amount = parseFloat(document.getElementById("modalWithdrawAmount").value);
+            const withdrawDay = parseInt(document.getElementById("modalWithdrawDay").value);
+            const withdrawMonth = parseInt(document.getElementById("modalWithdrawMonth").value);
+
+            if (isNaN(amount) || isNaN(withdrawDay) || isNaN(withdrawMonth)) {
+                alert("Please ensure all inputs are valid and filled correctly.");
+                return;
+            }
+
+            if (amount > cumulativeProfit) {
+                alert("Amount exceeds cumulative profit.");
+                return;
+            }
+
+            cumulativeProfit -= amount;
+            const vndEquivalent = amount * 25000;
+            const newWithdrawal = { date: `${withdrawDay}-${withdrawMonth}`, amount, vndEquivalent };
+            undoHistory.push({ action: 'withdraw', withdrawal: newWithdrawal });
+            withdrawalHistory.push(newWithdrawal);
+
+            document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
+            updateWithdrawHistory();
+
+        }
+
+        function openOptionModal() {
+            document.getElementById("optionModal").style.display = "block";
+            document.getElementById("optionOverlay").style.display = "block";
+        }
+
+        function closeOptionModal() {
+            document.getElementById("optionModal").style.display = "none";
+            document.getElementById("optionOverlay").style.display = "none";
+        }
+
+        function openReinvestmentModal() {
+            closeOptionModal();
+            document.getElementById("reinvestmentModal").style.display = "block";
+            document.getElementById("reinvestmentOverlay").style.display = "block";
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${Math.round(reinvestmentBalance).toLocaleString()}`;
+            updateReinvestmentHistory();
+        }
+
+        function closeReinvestmentModal() {
+            document.getElementById("reinvestmentModal").style.display = "none";
+            document.getElementById("reinvestmentOverlay").style.display = "none";
+        }
+
+        function confirmReinvestment() {
+            const amount = parseFloat(document.getElementById("reinvestmentAmount").value);
+            const tokenName = document.getElementById("reinvestmentTokenName").value;
+            const tokenPrice = parseFloat(document.getElementById("reinvestmentTokenPrice").value);
+            const reinvestDay = parseInt(document.getElementById("reinvestmentDay").value);
+            const reinvestMonth = parseInt(document.getElementById("reinvestmentMonth").value);
+
+            if (isNaN(amount) || isNaN(tokenPrice) || isNaN(reinvestDay) || isNaN(reinvestMonth) || !tokenName) {
+                alert("Please ensure all inputs are valid and filled correctly.");
+                return;
+            }
+
+            if (amount > reinvestmentBalance) {
+                alert("Amount exceeds reinvestment balance.");
+                return;
+            }
+
+            reinvestmentBalance -= amount;
+            const tokensPurchased = amount / tokenPrice;
+
+            const newReinvestment = {
+                date: `${reinvestDay}-${reinvestMonth}`,
+                tokenName,
+                tokensPurchased,
+                amount
+            };
+
+            reinvestmentHistory.push(newReinvestment);
+        
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${Math.round(reinvestmentBalance).toLocaleString()}`;
+            undoHistory.push({ action: 'reinvest', reinvestment: newReinvestment });
+            updateReinvestmentHistory();
+            updateReinvestmentSummary();
+        }
+
+        function undoReinvestment() {
+            const lastAction = undoHistory.pop();
+            if (!lastAction || lastAction.action !== 'reinvest') {
+                alert("No reinvestment actions to undo.");
+                return;
+            }
+
+            const { reinvestment } = lastAction;
+            reinvestmentHistory = reinvestmentHistory.filter(tx => tx !== reinvestment);
+            reinvestmentBalance += reinvestment.amount; 
+            updateReinvestmentHistory();
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${Math.round(reinvestmentBalance).toLocaleString()}`;
+            alert("Last reinvestment action undone successfully.");   
+        }
+
+
+        function updateReinvestmentHistory() {
+            const historyElement = document.getElementById("reinvestmentHistoryText");
+            historyElement.innerHTML = "";
+
+                if (reinvestmentHistory.length === 0) {
+                    historyElement.innerHTML = "<div>No reinvestment history available.</div>";
+                        return;
+                    }
+
+            const tokenSummary = {};
+            reinvestmentHistory.forEach(tx => {
+            historyElement.innerHTML += `<div>Date: ${tx.date}, ${formatNumber(tx.tokensPurchased)} ${tx.tokenName} purchased at $${formatNumber(tx.amount)}</div>`;
+
+                if (!tokenSummary[tx.tokenName]) {
+                            tokenSummary[tx.tokenName] = 0;
+                        }
+                    tokenSummary[tx.tokenName] += tx.tokensPurchased;
+                    });
+
+                    const summaryElement = document.getElementById("reinvestmentSummaryText");
+                    summaryElement.innerHTML = "";
+
+                    for (const [token, totalTokens] of Object.entries(tokenSummary)) {
+                        summaryElement.innerHTML += `<div>${token}: ${Number.isInteger(totalTokens) ? totalTokens : totalTokens.toFixed(2)} tokens</div>`;
+                    }
+        }
+
+        function updateReinvestmentBalanceFromTransfer(amount) {
+            reinvestmentBalance += amount;
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${Math.round(reinvestmentBalance).toLocaleString()}`;
+        }
+
+        function resetReinvestment() {
+            reinvestmentHistory = [];
+            reinvestmentBalance = transferHistory.reduce((sum, tx) => sum + tx.amount, 0);
+
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${Math.round(reinvestmentBalance).toLocaleString()}`;
+            document.getElementById("reinvestmentHistoryText").innerHTML = "<div>No reinvestment history available.</div>";
+            document.getElementById("reinvestmentSummaryText").innerHTML = "";
+            alert("Reinvestment history and balance have been reset.");
+        }
+
+        function updateTokens() {
+            const usdtInvested = parseFloat(document.getElementById("usdtInvested").value);
+            const leverage = parseFloat(document.getElementById("leverage").value);
+            const startPosition = parseFloat(document.getElementById("startPosition").value);
+
+            if (isNaN(usdtInvested) || isNaN(leverage) || isNaN(startPosition) || startPosition <= 0) {
+                document.getElementById("totalTokens30Days").innerText = "0";
+                return;
+            }
+
+            const totalInvestment = usdtInvested * leverage;
+            const totalTokens = totalInvestment / startPosition;
+
+            document.getElementById("totalTokens30Days").innerText = `${Math.round(totalTokens).toLocaleString()} tokens`;
+        }
+
+        let tradeSummary = {}; 
+        let tradeHistory = [];
+        let tradeBalance = 0;
+        let undoTradeHistory = [];
+
+        function openTradeModal() {
+            document.getElementById("tradeModal").style.display = "block";
+            document.getElementById("tradeOverlay").style.display = "block";
+            updateTradeSummary();
+            updateTradeHistory();
+        }
+
+        function closeTradeModal() {
+            document.getElementById("tradeModal").style.display = "none";
+            document.getElementById("tradeOverlay").style.display = "none";
+        }
+
+        function transferToTrade() {t
+            const summaryElement = document.getElementById("reinvestmentSummaryText");
+
+            const tokens = Array.from(summaryElement.children).map(tokenElement => {
+                const [tokenName, quantityText] = tokenElement.textContent.split(": ");
+                const quantity = parseFloat(quantityText);
+                return { tokenName: tokenName.trim(), quantity };
+            });
+
+            if (tokens.length === 0) {
+                alert("No tokens available to transfer.");
+                return;
+            }
+
+            tokens.forEach(({ tokenName, quantity }) => {
+                if (!tradeSummary[tokenName]) {
+                    tradeSummary[tokenName] = 0;
+                }
+                tradeSummary[tokenName] += quantity;
+            });
+
+            reinvestmentHistory = [];
+            reinvestmentBalance = 0;
+
+            updateReinvestmentHistory();
+            updateReinvestmentSummary();
+            updateTradeSummary();
+
+            alert("Tokens have been successfully transferred to Trade.");
+        }
+
+        function updateReinvestmentSummary() {
+            const summaryElement = document.getElementById("reinvestmentSummaryText");
+            summaryElement.style.maxHeight = "200px"; 
+            summaryElement.style.overflowY = "scroll";
+            summaryElement.style.border = "1px solid #ddd"; 
+            summaryElement.style.padding = "10px"; 
+            summaryElement.innerHTML = "";
+
+            const tokenSummary = {};
+            reinvestmentHistory.forEach(tx => {
+                if (!tokenSummary[tx.tokenName]) {
+                    tokenSummary[tx.tokenName] = 0;
+                }
+                tokenSummary[tx.tokenName] += tx.tokensPurchased;
+            });
+
+            for (const [token, totalTokens] of Object.entries(tokenSummary)) {
+                summaryElement.innerHTML += `<div>${token}: ${formatNumber(totalTokens)} tokens</div>`;
+            }
+        }
+
+        function confirmTrade() {
+            const tokenName = document.getElementById("tradeTokenName").value.trim();
+            const sellAmount = parseFloat(document.getElementById("sellAmount").value);
+            const priceToken = parseFloat(document.getElementById("priceToken").value);
+            const tradeDay = parseInt(document.getElementById("tradeDay").value);
+            const tradeMonth = parseInt(document.getElementById("tradeMonth").value);
+
+            if (!tokenName || isNaN(sellAmount) || sellAmount <= 0 || 
+                isNaN(priceToken) || priceToken <= 0 || 
+                isNaN(tradeDay) || isNaN(tradeMonth)) {
+                alert("Please ensure all inputs are valid and filled correctly.");
+                return;
+            }
+
+            if (!tradeSummary[tokenName] || tradeSummary[tokenName] < sellAmount) {
+                alert("Insufficient tokens to sell.");
+                return;
+            }
+
+            const profit = sellAmount * priceToken;
+            tradeBalance += profit;
+
+            tradeSummary[tokenName] -= sellAmount;
+            if (tradeSummary[tokenName] <= 0) {
+                delete tradeSummary[tokenName];
+            }
+
+            const tradeRecord = {
+                date: `${tradeDay}-${tradeMonth}`,
+                tokenName,
+                sellAmount,
+                profit
+            };
+            tradeHistory.push(tradeRecord);
+
+            updateTradeSummary();
+            updateTradeBalanceDisplay();
+            updateTradeHistory();
+
+            alert("Trade confirmed successfully.");
+        }
+
+
+
+        function updateTradeBalanceDisplay() {
+            const tradeBalanceElement = document.getElementById("tradeBalanceDisplay");
+
+            if (!tradeBalanceElement) {
+                console.error("Element with ID 'tradeBalanceDisplay' not found.");
+                return;
+            }
+            tradeBalanceElement.innerText = `$${formatNumber(tradeBalance)}`;
+            console.log("Displayed Trade Balance:", tradeBalanceElement.innerText);
+        }
+
+        function undoTrade() {
+            const lastAction = undoTradeHistory.pop();
+            if (!lastAction) {
+                alert("No trades to undo.");
+                return;
+            }
+
+            if (lastAction.action === "trade") {
+                const { tradeRecord } = lastAction;
+                const { tokenName, sellAmount, profit } = tradeRecord;
+
+                if (!tradeSummary[tokenName]) tradeSummary[tokenName] = 0;
+                tradeSummary[tokenName] += sellAmount;
+                tradeBalance -= profit;
+
+                tradeHistory = tradeHistory.filter(tr => tr !== tradeRecord);
+
+                updateTradeSummary();
+                updateTradeHistory();
+                document.getElementById("tradeBalanceDisplay").innerText = `$${tradeBalance.toLocaleString()}`;
+                alert("Trade undone.");
+            }
+        }
+
+        function transferTradeBalanceToReinvestment() {
+            reinvestmentBalance += tradeBalance;
+            tradeBalance = 0;
+            document.getElementById("tradeBalanceDisplay").innerText = `$${tradeBalance.toLocaleString()}`;
+            document.getElementById("reinvestmentBalanceDisplay").innerText = `$${reinvestmentBalance.toLocaleString()}`;
+            alert("Trade balance transferred to Reinvestment.");
+        }
+
+        function updateTradeSummary() {
+            const summaryElement = document.getElementById("tradeSummaryText");
+            summaryElement.innerHTML = ""; 
+                
+                if (Object.keys(tradeSummary).length === 0) {
+                    summaryElement.innerHTML = "<div>No tokens available in Trade.</div>";
+                    return;
+                }
+                for (const [tokenName, quantity] of Object.entries(tradeSummary)) {
+                    summaryElement.innerHTML += `<div>${tokenName}: ${formatNumber(quantity)} tokens</div>`;
+                }
+        }
+
+        function updateTradeHistory() {
+            const historyElement = document.getElementById("tradeHistoryText");
+            historyElement.innerHTML = "";
+
+            tradeHistory.forEach(tr => {
+                historyElement.innerHTML += `<div>Time: ${tr.date}, ${tr.tokenName}, ${formatNumber(tr.sellAmount)} tokens, profit: $${formatNumber(tr.profit)}</div>`;
+            });
+        }
+
+        document.addEventListener("keydown", function (event) {
+            const activeModal = document.querySelector("div[style*='display: block']"); 
+            if (!activeModal) return;
+
+            if (event.key === "Enter") {
+                let confirmButton;
+
+                switch (activeModal.id) {
+                    case "transferToTradeModal":
+                        confirmButton = document.querySelector("#transferToTradeModal button[onclick*='confirmTransferToTrade']");
+                        break;
+                    case "tradeModal":
+                        confirmButton = document.querySelector("#tradeModal button[onclick*='confirmTrade']");
+                        break;
+                    case "reinvestmentModal":
+                        confirmButton = document.querySelector("#reinvestmentModal button[onclick*='confirmReinvestment']");
+                        break;
+                    case "transferModal":
+                        confirmButton = document.querySelector("#transferModal button[onclick*='confirmTransfer']");
+                        break;
+                    default:
+                        confirmButton = activeModal.querySelector("button[onclick*='confirm']");
+                        break;
+                }
+
+                if (confirmButton) confirmButton.click();
+            }
+
+            if (event.key === "Escape") {
+                switch (activeModal.id) {
+                    case "withdrawModal":
+                        closeModal();
+                        break;
+                    case "transferModal":
+                        closeTransferModal();
+                        break;
+                    case "reinvestmentModal":
+                        closeReinvestmentModal();
+                        break;
+                    case "tradeModal":
+                        closeTradeModal();
+                        break;
+                    case "transferToTradeModal":
+                        closeTransferToTradeModal();
+                        break;
+                    default:
+                        const closeButton = activeModal.querySelector("button[onclick*='close']");
+                        if (closeButton) closeButton.click();
+                        break;
+                }
+            }
+        });
+
+
+        function openTransferToTradeModal() {
+            document.getElementById("transferToTradeModal").style.display = "block";
+            document.getElementById("transferToTradeOverlay").style.display = "block";
+        }
+
+        function closeTransferToTradeModal() {
+            document.getElementById("transferToTradeModal").style.display = "none";
+            document.getElementById("transferToTradeOverlay").style.display = "none";
+        }
+
+        function confirmTransferToTrade() {
+            const tokenName = document.getElementById("tokenName").value.trim();
+            const tokenQuantity = parseFloat(document.getElementById("tokenQuantity").value);
+
+            if (!tokenName || isNaN(tokenQuantity) || tokenQuantity <= 0) {
+                alert("Please enter valid token name and quantity.");
+                return;
+            }
+
+            const token = reinvestmentHistory.find(t => t.tokenName === tokenName);
+
+            if (!token || token.tokensPurchased < tokenQuantity) {
+                alert("Insufficient token quantity in Reinvestment.");
+                return;
+            }
+
+            token.tokensPurchased -= tokenQuantity;
+
+            if (token.tokensPurchased <= 0) {
+                reinvestmentHistory = reinvestmentHistory.filter(t => t !== token);
+            }
+
+            if (!tradeSummary[tokenName]) {
+                tradeSummary[tokenName] = 0;
+            }
+            tradeSummary[tokenName] += tokenQuantity;
+
+            updateReinvestmentSummary();
+            updateTradeSummary();
+
+            closeTransferToTradeModal();
+            alert(`${tokenQuantity} ${tokenName} transferred to Trade.`);
+        }
+
+        function formatNumber(value) {
+            if (Number.isInteger(value)) {
+                return value.toLocaleString(); 
+            } else {
+                return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); 
+            }
+        }
+
+    </script>
+
+    </head>
+        <div id="withdrawModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000;">
+            <h3>Withdraw Funds</h3>
+            <label for="modalWithdrawAmount">Withdraw Amount:</label>
+            <input type="number" id="modalWithdrawAmount">
+
+            <label>Withdraw Date:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="modalWithdrawDay" placeholder="Day" style="width: 50%;">
+                <input type="number" id="modalWithdrawMonth" placeholder="Month" style="width: 50%;">
+            </div>
+
+            <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                <button onclick="confirmWithdraw()" style="background: #0071e3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Confirm</button>
+                <button onclick="closeModal()" style="background: #d70040; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+            </div>
+            <h4 style="margin-top: 20px;">Withdraw History</h4>
+            <div id="withdrawHistoryText" class="history-text"></div>
+        </div>
+        <div id="modalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;" onclick="closeModal()"></div>
+
+        <div id="transferModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000; width: 90%; max-width: 400px;">
+            <h3>Transfer Funds</h3>
+            <label for="transferAmount">Transfer Amount:</label>
+            <input type="number" id="transferAmount" placeholder="Amount">
+
+            <label>Transfer Date:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="transferDay" placeholder="Day" style="width: 50%;">
+                <input type="number" id="transferMonth" placeholder="Month" style="width: 50%;">
+        </div>
+
+        <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+            <button onclick="confirmTransfer()" style="background: #0071e3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Confirm</button>
+            <button onclick="closeTransferModal()" style="background: #d70040; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+        </div>
+
+            <h4 style="margin-top: 20px;">Transfer History</h4>
+            <div id="transferHistoryText" class="history-text" style="height: 150px; overflow-y: auto; border: 1px solid #e0e0e0; padding: 10px; border-radius: 8px; background-color: #f9f9f9;"></div>
+        </div>
+        <div id="transferOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;" onclick="closeTransferModal()"></div>
+
+        <div id="optionModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000;">
+            <h3>Choose Option</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="openModal()" style="background: #0071e3; color: white; padding: 10px; border-radius: 5px;">Withdraw</button>
+                <button onclick="openTransferModal()" style="background: #0071e3; color: white; padding: 10px; border-radius: 5px;">Transfer</button>
+                <button onclick="openReinvestmentModal()" style="background: #0071e3; color: white; padding: 10px; border-radius: 5px;">Reinvestment</button>
+                <button onclick="openTradeModal()" style="background: #0071e3; color: white; padding: 10px; border-radius: 5px;">Trade</button>
+            </div>
+            <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                <button onclick="closeOptionModal()" style="background: #d70040; color: white; padding: 10px 20px; border-radius: 5px;">Cancel</button>
+            </div>
+        </div>
+        <div id="optionOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;" onclick="closeOptionModal()"></div>
+
+        <div id="reinvestmentModal" style="display: none;">
+            <h3>Reinvestment</h3>
+            <div>
+                <strong>Reinvestment Balance:</strong> <span id="reinvestmentBalanceDisplay">$0</span>
+            </div>
+
+            <label for="reinvestmentTokenName">Token Name:</label>
+            <input type="text" id="reinvestmentTokenName" placeholder="e.g., BTC">
+
+            <label for="reinvestmentAmount">Reinvestment Amount:</label>
+            <input type="number" id="reinvestmentAmount" placeholder="Amount">
+
+            <label for="reinvestmentTokenPrice">Token Price:</label>
+            <input type="number" id="reinvestmentTokenPrice" placeholder="Price">
+
+            <label>Reinvestment Date:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="reinvestmentDay" placeholder="Day">
+                <input type="number" id="reinvestmentMonth" placeholder="Month">
+            </div>
+
+            <button onclick="confirmReinvestment()">Confirm</button>
+            <button class="undo" onclick="undoReinvestment()">Undo</button>
+            <button onclick="resetReinvestment()">Reset</button>
+            <button onclick="openTransferToTradeModal()" style="background: #0071e3; color: white; padding: 10px; border-radius: 5px;">Transfer to Trade</button>
+
+
+            <h4>Reinvestment History</h4>
+            <div id="reinvestmentHistoryText"></div>
+
+            <h4>Summary</h4>
+            <div id="reinvestmentSummaryText" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9;"></div>
+        </div>
+
+        <div id="reinvestmentOverlay" style="display: none;" onclick="closeReinvestmentModal()"></div>
+
+        <div id="tradeModal">
+            <h3>Trade</h3>
+            <div><strong>Trade Balance:</strong> <span id="tradeBalanceDisplay">$0</span></div>
+
+            <label for="tradeTokenName">Token Name:</label>
+            <input type="text" id="tradeTokenName" placeholder="e.g., BTC">
+
+            <label for="sellAmount">Sell Amount:</label>
+            <input type="number" id="sellAmount" placeholder="Amount">
+
+            <label for="priceToken">Price Token:</label>
+            <input type="number" id="priceToken" placeholder="Price">
+
+            <label>Trade Date:</label>
+            <div>
+                <input type="number" id="tradeDay" placeholder="Day">
+                <input type="number" id="tradeMonth" placeholder="Month">
+            </div>
+
+            <button onclick="confirmTrade()">Confirm</button>
+            <button onclick="undoTrade()">Undo</button>
+            <button onclick="transferTradeBalanceToReinvestment()">Transfer to Reinvestment</button>
+
+            <h4>Trade Summary</h4>
+            <div id="tradeSummaryText"></div>
+
+            <h4>Trade History</h4>
+            <div id="tradeHistoryText"></div>
+        </div>
+        <div id="tradeOverlay" onclick="closeTradeModal()"></div>
+
+        <div id="transferToTradeModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000;">
+            <h3>Transfer to Trade</h3>
+            <label for="tokenName">Token Name:</label>
+            <input type="text" id="tokenName" placeholder="Enter token name">
+            <label for="tokenQuantity">Quantity:</label>
+            <input type="number" id="tokenQuantity" placeholder="Enter quantity">
+            <div style="margin-top: 15px; display: flex; justify-content: space-between;">
+                <button onclick="confirmTransferToTrade()" style="background: #0071e3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Confirm</button>
+                <button onclick="closeTransferToTradeModal()" style="background: #d70040; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+        <div id="transferToTradeOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;" onclick="closeTransferToTradeModal()"></div>
+
+
+    <body>
+        <h1>Profit Calculator</h1>
+        <div class="container">
+            <label for="leverage">Leverage:</label>
+            <input type="number" id="leverage" value="5">
+
+            <label for="token">Token:</label>
+            <input type="text" id="token">
+
+            <label for="usdtInvested">USDT Invested:</label>
+            <input type="number" id="usdtInvested">
+
+            <label>Position:</label>
+            <div style="display: flex; gap: 10px;">
+            <input type="number" id="startPosition" placeholder="Start" style="width: 50%;" oninput="updateTokens()">
+            <input type="number" id="endPosition" placeholder="End" style="width: 50%;">
+            </div>        
+
+            <label>Time Start:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="startDay" placeholder="Day" style="width: 50%;">
+                <input type="number" id="startMonth" placeholder="Month" style="width: 50%;">
+            </div>
+
+            <label>Time End:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="endDay" placeholder="Day" style="width: 50%;">
+                <input type="number" id="endMonth" placeholder="Month" style="width: 50%;">
+            </div>
+
+        </div>
+        <div class="buttons">
+            <button class="long" onclick="calculateProfit('long')">Long</button>
+            <button class="short" onclick="calculateProfit('short')">Short</button>
+            <button class="option" onclick="openOptionModal()">Option</button>
+            <button class="undo" onclick="undo()">Undo</button>
+
+        </div>
+        <div class="output">
+            <div><strong>Cumulative Profit:</strong> <span id="cumulativeProfit" style="color: green;">$0</span></div>
+            <div><strong>Volume 30 Days:</strong> <span id="volume30Days">$0</span></div>
+            <div><strong>Tokens:</strong> <span id="totalTokens30Days">0</span></div>
+            <div><strong>Risk:</strong> <span id="riskValue" style="color: red;">0.00</span></div>
+        </div>
+        <div class="history">
+            <h2>Transaction History</h2>
+            <div id="historyText" class="history-text"></div>
+        </div>
+
+    </body>
+</html>
