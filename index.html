@@ -45,6 +45,38 @@
             font-size: 16px;
         }
 
+        .input-with-button {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px; /* Adjust margin to fit button */
+        }
+
+        .input-with-button input {
+            margin-bottom: 0; /* Remove default input margin-bottom */
+            flex-grow: 1;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .input-with-button button {
+            padding: 10px 15px;
+            margin-left: -1px; /* Overlap border */
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border: 1px solid #0071e3; /* Match input border */
+            background-color: #0071e3;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+
+        .input-with-button button:hover {
+            background-color: #005bb5;
+        }
+
+
         .buttons {
             display: flex;
             justify-content: space-around;
@@ -79,7 +111,7 @@
             background-color: #a60030;
         }
 
-        button.option {
+        button.option, button.invest { /* Added .invest class */
             background-color: #0071e3;
             color: white;
         }
@@ -94,7 +126,7 @@
             transform: scale(0.98);
         }
 
-        .output, .history, .transfer-history-section { /* Added .transfer-history-section */
+        .output, .history, .transfer-history-section, .invest-history-section { /* Added .invest-history-section */
             margin-top: 30px;
             padding: 20px;
             background: white;
@@ -111,7 +143,7 @@
             background-color: #f9f9f9;
         }
 
-        .history h2, .transfer-history-section h2 { /* Added .transfer-history-section h2 */
+        .history h2, .transfer-history-section h2, .invest-history-section h2 { /* Added .invest-history-section h2 */
             margin-top: 0;
             color: #1d1d1f;
         }
@@ -136,7 +168,7 @@
         }
 
         /* Modal styling */
-        #withdrawModal, #transferModal, #optionModal {
+        #withdrawModal, #transferModal, #optionModal, #investModal { /* Added #investModal */
             display: none;
             position: fixed;
             top: 50%;
@@ -148,19 +180,20 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             width: 90%;
-            max-width: 400px;
+            max-width: 800px; /* Increased max-width for invest modal */
             transition: opacity 0.3s ease, transform 0.3s ease;
             opacity: 0;
             transform: translate(-50%, -60%);
         }
         #withdrawModal[style*="display: block;"],
         #transferModal[style*="display: block;"],
-        #optionModal[style*="display: block;"] {
+        #optionModal[style*="display: block;"],
+        #investModal[style*="display: block;"] { /* Added #investModal display */
             opacity: 1;
             transform: translate(-50%, -50%);
         }
 
-        #modalOverlay, #transferOverlay, #optionOverlay {
+        #modalOverlay, #transferOverlay, #optionOverlay, #investOverlay { /* Added #investOverlay */
             display: none;
             position: fixed;
             top: 0;
@@ -171,20 +204,6 @@
             z-index: 999;
         }
 
-        button {
-            background-color: #0071e3;
-            color: white;
-            transition: all 0.3s ease;
-        }
-        button:hover {
-            background-color: #005bb5;
-        }
-        button.undo {
-            background-color: #747474;
-        }
-        button.undo:hover {
-            background-color: #555; /* Darker grey on hover for undo */
-        }
         .modal-buttons {
             margin-top: 15px;
             display: flex;
@@ -204,6 +223,40 @@
             background: #d70040;
             color: white;
         }
+
+        .invest-section {
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            flex: 1; /* Allow sections to grow and shrink */
+            margin: 0 10px; /* Space between sections */
+        }
+        .invest-section:first-child {
+            margin-left: 0;
+        }
+        .invest-section:last-child {
+            margin-right: 0;
+        }
+        .invest-section h4 {
+            margin-top: 0;
+            color: #1d1d1f;
+        }
+
+        .invest-sections-wrapper {
+            display: flex; /* Arrange buy and sell horizontally */
+            gap: 20px; /* Space between buy and sell sections */
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        @media (max-width: 768px) {
+            .invest-sections-wrapper {
+                flex-direction: column;
+            }
+            .invest-section {
+                margin: 10px 0;
+            }
+        }
     </style>
 
     <script>
@@ -212,6 +265,9 @@
         let withdrawalHistory = [];
         let undoHistory = []; // Stores actions for undo
         let transferHistory = []; // Stores transfer actions
+        let investmentPortfolio = {}; // Stores owned crypto tokens and their quantities
+        let investTransactionHistory = []; // Stores buy/sell history for Invest feature
+        let totalInvestmentCapital = 0; // New variable to track total investment capital
 
         function calculateProfit(type) {
             const usdtInvested = parseFloat(document.getElementById("usdtInvested").value);
@@ -267,7 +323,7 @@
             document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
 
             updateVolume30Days(currentDate);
-            updateHistory();
+            updateHistory(); // Ensure history is updated after each calculation
         }
 
         function updateVolume30Days(latestDate) {
@@ -276,10 +332,9 @@
 
             const filteredTransactions = transactionHistory.filter(tx => tx.date >= thirtyDaysAgo && tx.date <= latestDate);
             const volume30Days = filteredTransactions.reduce((sum, tx) => sum + tx.totalInvestment, 0);
-            const totalTokens30Days = filteredTransactions.reduce((sum, tx) => sum + tx.totalTokens, 0);
-
+            
             document.getElementById("volume30Days").innerText = `$${Math.round(volume30Days).toLocaleString()}`;
-            document.getElementById("totalTokens30Days").innerText = `${Math.round(totalTokens30Days).toLocaleString()} tokens`;
+            // The 'mainTotalTokens' is updated by updateMainTokensDisplay, not this function.
         }
 
         function updateHistory() {
@@ -389,6 +444,216 @@
             });
         }
 
+        // New Invest Feature Functions
+        function openInvestModal() {
+            document.getElementById("investModal").style.display = "block";
+            document.getElementById("investOverlay").style.display = "block";
+            updateInvestmentPortfolioDisplay(); // Update portfolio when modal opens
+            updateInvestHistory(); // Update history when modal opens
+            updateCalculatedTokens(); // Ensure initial calculation on opening
+        }
+
+        function closeInvestModal() {
+            document.getElementById("investModal").style.display = "none";
+            document.getElementById("investOverlay").style.display = "none";
+        }
+
+        function updateCalculatedTokens() {
+            const cryptoBuyAmount = parseFloat(document.getElementById("cryptoBuyAmount").value);
+            const buyPrice = parseFloat(document.getElementById("buyPrice").value);
+            const calculatedTokensElement = document.getElementById("calculatedTokens");
+
+            if (!isNaN(cryptoBuyAmount) && !isNaN(buyPrice) && buyPrice > 0) {
+                const tokens = cryptoBuyAmount / buyPrice;
+                calculatedTokensElement.innerText = `You will get: ${formatNumber(tokens)} tokens`;
+            } else {
+                calculatedTokensElement.innerText = "You will get: 0 tokens";
+            }
+        }
+
+        function addInvestmentCapital() {
+            const additionalAmount = parseFloat(document.getElementById("totalInvestedAmount").value);
+            if (!isNaN(additionalAmount) && additionalAmount > 0) {
+                totalInvestmentCapital += additionalAmount;
+                const newInvestmentAction = {
+                    type: 'add_capital',
+                    amount: additionalAmount,
+                    totalInvestmentCapitalSnapshot: totalInvestmentCapital
+                };
+                investTransactionHistory.push(newInvestmentAction);
+                undoHistory.push({ action: 'invest_add_capital', transaction: newInvestmentAction });
+                document.getElementById("totalInvestedAmount").value = ''; // Clear input after adding
+                updateInvestmentPortfolioDisplay();
+                updateInvestHistory();
+            } else if (!isNaN(additionalAmount) && additionalAmount <= 0) {
+                alert("Please enter a positive amount to add to investment capital.");
+            }
+        }
+
+        function buyCrypto() {
+            const cryptoBuyAmount = parseFloat(document.getElementById("cryptoBuyAmount").value);
+            const cryptoName = document.getElementById("cryptoNameBuy").value.trim().toUpperCase();
+            const buyPrice = parseFloat(document.getElementById("buyPrice").value);
+            const buyDay = parseInt(document.getElementById("buyDay").value);
+            const buyMonth = parseInt(document.getElementById("buyMonth").value);
+            const buyYear = parseInt(document.getElementById("buyYear").value);
+
+            if (isNaN(cryptoBuyAmount) || !cryptoName || isNaN(buyPrice) || isNaN(buyDay) || isNaN(buyMonth) || isNaN(buyYear)) {
+                alert("Please fill in all buy crypto fields correctly.");
+                return;
+            }
+            if (cryptoBuyAmount <= 0 || buyPrice <= 0) {
+                alert("Amount and price must be positive.");
+                return;
+            }
+
+            if (cryptoBuyAmount > totalInvestmentCapital) {
+                alert("Cannot buy: Crypto buy amount exceeds available investment capital.");
+                return;
+            }
+            
+            totalInvestmentCapital -= cryptoBuyAmount;
+
+            const tokensBought = cryptoBuyAmount / buyPrice;
+
+            if (investmentPortfolio[cryptoName]) {
+                investmentPortfolio[cryptoName] += tokensBought;
+            } else {
+                investmentPortfolio[cryptoName] = tokensBought;
+            }
+
+            const newBuyTransaction = {
+                type: 'buy',
+                date: `${buyDay}-${buyMonth}-${buyYear}`,
+                cryptoName: cryptoName,
+                buyPrice: buyPrice,
+                cryptoBuyAmount: cryptoBuyAmount,
+                tokens: tokensBought,
+                totalInvestmentCapitalSnapshot: totalInvestmentCapital // Snapshot for undo
+            };
+            investTransactionHistory.push(newBuyTransaction);
+            undoHistory.push({ action: 'invest_buy', transaction: newBuyTransaction });
+
+            updateInvestmentPortfolioDisplay();
+            updateInvestHistory();
+            clearBuyInputs();
+        }
+
+        function sellCrypto() {
+            const cryptoName = document.getElementById("cryptoNameSell").value.trim().toUpperCase();
+            const sellTokens = parseFloat(document.getElementById("sellTokens").value);
+            const sellPrice = parseFloat(document.getElementById("sellPrice").value);
+            const sellDay = parseInt(document.getElementById("sellDay").value);
+            const sellMonth = parseInt(document.getElementById("sellMonth").value);
+            const sellYear = parseInt(document.getElementById("sellYear").value);
+
+            if (!cryptoName || isNaN(sellTokens) || isNaN(sellPrice) || isNaN(sellDay) || isNaN(sellMonth) || isNaN(sellYear)) {
+                alert("Please fill in all sell crypto fields correctly.");
+                return;
+            }
+            if (sellTokens <= 0 || sellPrice <= 0) {
+                alert("Amount and price must be positive.");
+                return;
+            }
+
+            if (!investmentPortfolio[cryptoName] || investmentPortfolio[cryptoName] < sellTokens) {
+                alert(`You do not have enough ${cryptoName} tokens to sell.`);
+                return;
+            }
+
+            investmentPortfolio[cryptoName] -= sellTokens;
+            if (investmentPortfolio[cryptoName] < 0.000001) { // Remove if negligible amount left
+                delete investmentPortfolio[cryptoName];
+            }
+
+            const amountReceivedFromSell = sellTokens * sellPrice;
+            totalInvestmentCapital += amountReceivedFromSell; // Add received amount to total investment capital
+
+            const newSellTransaction = {
+                type: 'sell',
+                date: `${sellDay}-${sellMonth}-${sellYear}`,
+                cryptoName: cryptoName,
+                sellPrice: sellPrice,
+                tokens: sellTokens,
+                amountReceived: amountReceivedFromSell, // Renamed from profit for clarity in sell context
+                totalInvestmentCapitalSnapshot: totalInvestmentCapital // Snapshot for undo
+            };
+            investTransactionHistory.push(newSellTransaction);
+            undoHistory.push({ action: 'invest_sell', transaction: newSellTransaction });
+
+            updateInvestmentPortfolioDisplay();
+            updateInvestHistory();
+            clearSellInputs();
+        }
+
+        function fillAllTokensToSell() {
+            const cryptoName = document.getElementById("cryptoNameSell").value.trim().toUpperCase();
+            if (cryptoName && investmentPortfolio[cryptoName]) {
+                document.getElementById("sellTokens").value = investmentPortfolio[cryptoName];
+            } else {
+                alert("Please enter a valid Crypto Name to sell or you don't own any of this crypto.");
+            }
+        }
+
+
+        function updateInvestmentPortfolioDisplay() {
+            const portfolioElement = document.getElementById("totalAsset");
+            portfolioElement.innerHTML = `<h4>Total Investment Capital: $${Math.round(totalInvestmentCapital).toLocaleString()}</h4>`; // Display total investment capital
+
+            let hasAssets = false;
+            for (const crypto in investmentPortfolio) {
+                if (investmentPortfolio[crypto] > 0) {
+                    portfolioElement.innerHTML += `<div>${crypto}: ${formatNumber(investmentPortfolio[crypto])} tokens</div>`;
+                    hasAssets = true;
+                }
+            }
+            if (!hasAssets && totalInvestmentCapital === 0) { // If no assets and capital is 0, show a specific message
+                portfolioElement.innerHTML = `<h4>Total Investment Capital: $0</h4><div>No crypto assets owned.</div>`;
+            } else if (!hasAssets && totalInvestmentCapital > 0) { // If capital > 0 but no assets, display capital and no assets msg
+                portfolioElement.innerHTML = `<h4>Total Investment Capital: $${Math.round(totalInvestmentCapital).toLocaleString()}</h4><div>No crypto assets owned.</div>`;
+            }
+        }
+
+
+        function updateInvestHistory() {
+            const investHistoryElement = document.getElementById("investTransactionHistory");
+            investHistoryElement.innerHTML = "";
+
+            if (investTransactionHistory.length === 0) {
+                investHistoryElement.innerHTML = "<div>No investment transactions yet.</div>";
+                return;
+            }
+
+            investTransactionHistory.forEach(tx => {
+                if (tx.type === 'buy') {
+                    investHistoryElement.innerHTML += `<div>Date: ${tx.date}, BUY ${tx.cryptoName}: ${formatNumber(tx.tokens)} tokens at $${formatNumber(tx.buyPrice)} (Spent: $${formatNumber(tx.cryptoBuyAmount)})</div>`;
+                } else if (tx.type === 'sell') {
+                    investHistoryElement.innerHTML += `<div>Date: ${tx.date}, SELL ${tx.cryptoName}: ${formatNumber(tx.tokens)} tokens at $${formatNumber(tx.sellPrice)} (Received: $${formatNumber(tx.amountReceived)})</div>`;
+                } else if (tx.type === 'add_capital') {
+                    investHistoryElement.innerHTML += `<div>Date: (N/A), Added Investment Capital: $${formatNumber(tx.amount)}</div>`;
+                }
+            });
+        }
+
+        function clearBuyInputs() {
+            document.getElementById("cryptoBuyAmount").value = '';
+            document.getElementById("cryptoNameBuy").value = '';
+            document.getElementById("buyPrice").value = '';
+            document.getElementById("buyDay").value = '';
+            document.getElementById("buyMonth").value = '';
+            document.getElementById("buyYear").value = '';
+            document.getElementById("calculatedTokens").innerText = "You will get: 0 tokens"; // Clear calculated tokens
+        }
+
+        function clearSellInputs() {
+            document.getElementById("cryptoNameSell").value = '';
+            document.getElementById("sellTokens").value = '';
+            document.getElementById("sellPrice").value = '';
+            document.getElementById("sellDay").value = '';
+            document.getElementById("sellMonth").value = '';
+            document.getElementById("sellYear").value = '';
+        }
+
         function undo() {
             const lastAction = undoHistory.pop();
             if (!lastAction) {
@@ -399,8 +664,10 @@
             if (lastAction.action === 'add') { // Undo Long/Short profit calculation
                 const { transaction } = lastAction;
                 transactionHistory = transactionHistory.filter(tx => tx !== transaction);
-                cumulativeProfit -= transaction.profit;
-                // Re-calculate 30-day volume after undoing an add transaction
+                cumulativeProfit = transaction.cumulativeProfit - transaction.profit; 
+                if (transactionHistory.length === 0 && cumulativeProfit === transaction.totalInvestment) {
+                    cumulativeProfit = 0;
+                }
                 const latestDate = transactionHistory.length > 0 ? transactionHistory[transactionHistory.length - 1].date : new Date();
                 updateVolume30Days(latestDate);
             } else if (lastAction.action === 'withdraw') { // Undo withdrawal
@@ -411,12 +678,40 @@
                 const { transfer } = lastAction;
                 transferHistory = transferHistory.filter(tr => tr !== transfer);
                 cumulativeProfit += transfer.amount;
+            } else if (lastAction.action === 'invest_buy') { // Undo crypto buy
+                const { transaction } = lastAction;
+                investTransactionHistory = investTransactionHistory.filter(tx => tx !== transaction);
+                totalInvestmentCapital += transaction.cryptoBuyAmount; // Return spent amount to total investment capital
+
+                if (investmentPortfolio[transaction.cryptoName]) {
+                    investmentPortfolio[transaction.cryptoName] += transaction.tokens;
+                    if (investmentPortfolio[transaction.cryptoName] < 0.000001) { 
+                        delete investmentPortfolio[transaction.cryptoName];
+                    }
+                }
+            } else if (lastAction.action === 'invest_sell') { // Undo crypto sell
+                const { transaction } = lastAction;
+                investTransactionHistory = investTransactionHistory.filter(tx => tx !== transaction);
+                totalInvestmentCapital -= transaction.amountReceived; // Deduct received amount from total investment capital
+
+                if (investmentPortfolio[transaction.cryptoName]) {
+                    investmentPortfolio[transaction.cryptoName] += transaction.tokens;
+                } else {
+                    investmentPortfolio[transaction.cryptoName] = transaction.tokens;
+                }
+            } else if (lastAction.action === 'invest_add_capital') { // Undo adding investment capital
+                const { transaction } = lastAction;
+                investTransactionHistory = investTransactionHistory.filter(tx => tx !== transaction);
+                totalInvestmentCapital -= transaction.amount; // Deduct the added amount
             }
 
             document.getElementById("cumulativeProfit").innerText = `$${Math.round(cumulativeProfit).toLocaleString()}`;
             updateHistory();
             updateWithdrawHistory();
             updateTransferHistory(); // Update transfer history section
+            updateInvestmentPortfolioDisplay(); // Update investment portfolio
+            updateInvestHistory(); // Update invest transaction history
+            updateMainTokensDisplay(); // Update main tokens display in case undo affected inputs
         }
 
         function openModal() { // For Withdraw Modal
@@ -441,20 +736,19 @@
             document.getElementById("optionOverlay").style.display = "none";
         }
 
-        function updateTokens() {
+        // Function to update the "Tokens" display in the main profit calculator section
+        function updateMainTokensDisplay() {
             const usdtInvested = parseFloat(document.getElementById("usdtInvested").value);
             const leverage = parseFloat(document.getElementById("leverage").value);
             const startPosition = parseFloat(document.getElementById("startPosition").value);
 
-            if (isNaN(usdtInvested) || isNaN(leverage) || isNaN(startPosition) || startPosition <= 0) {
-                document.getElementById("totalTokens30Days").innerText = "0"; // This span is used for tokens of current trade
-                return;
+            if (!isNaN(usdtInvested) && !isNaN(leverage) && !isNaN(startPosition) && startPosition > 0) {
+                const totalInvestment = usdtInvested * leverage;
+                const totalTokens = totalInvestment / startPosition;
+                document.getElementById("mainTotalTokens").innerText = `${formatNumber(totalTokens)} tokens`;
+            } else {
+                document.getElementById("mainTotalTokens").innerText = "0 tokens";
             }
-
-            const totalInvestment = usdtInvested * leverage;
-            const totalTokens = totalInvestment / startPosition;
-
-            document.getElementById("totalTokens30Days").innerText = `${Math.round(totalTokens).toLocaleString()} tokens`;
         }
         
         document.addEventListener("keydown", function (event) {
@@ -471,9 +765,21 @@
                     case "transferModal":
                         confirmButton = activeModal.querySelector("button[onclick*='confirmTransfer']");
                         break;
+                    case "investModal":
+                        // Prioritize "Add Investment Capital" if that input is focused
+                        if (document.activeElement.id === "totalInvestedAmount") {
+                            confirmButton = document.getElementById("addCapitalButton");
+                        } else if (document.activeElement.closest('.invest-section') && document.activeElement.closest('.invest-section').querySelector('h4').innerText.includes('Buy')) {
+                            confirmButton = document.getElementById("buyCryptoButton");
+                        } else if (document.activeElement.closest('.invest-section') && document.activeElement.closest('.invest-section').querySelector('h4').innerText.includes('Sell')) {
+                            confirmButton = document.getElementById("sellCryptoButton");
+                        } else {
+                            // Default to buy if no specific focus or multiple fields are active
+                            confirmButton = document.getElementById("buyCryptoButton");
+                        }
+                        break;
                     default:
-                        // Fallback for any other modal if a specific confirm button exists
-                        confirmButton = activeModal.querySelector("button[onclick*='confirm']");
+                        confirmButton = activeModal.querySelector("button.confirm");
                         break;
                 }
 
@@ -490,6 +796,9 @@
                         break;
                     case "optionModal":
                         closeOptionModal();
+                        break;
+                    case "investModal":
+                        closeInvestModal();
                         break;
                     default:
                         const closeButton = activeModal.querySelector("button[onclick*='close']");
@@ -511,6 +820,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateWithdrawHistory();
             updateTransferHistory();
+            updateInvestmentPortfolioDisplay(); // Initialize portfolio display
+            updateInvestHistory(); // Initialize invest history display
+            updateMainTokensDisplay(); // Initialize main tokens display
         });
 
     </script>
@@ -568,21 +880,92 @@
     </div>
     <div id="optionOverlay" onclick="closeOptionModal()"></div>
 
+    <div id="investModal">
+        <h3>Invest in Crypto</h3>
+        
+        <div class="invest-sections-wrapper">
+            <div class="invest-section">
+                <h4>Buy Crypto</h4>
+                <label for="totalInvestedAmount">Add Investment Capital:</label>
+                <input type="number" id="totalInvestedAmount" placeholder="e.g., 1000">
+                <div class="modal-buttons">
+                    <button onclick="addInvestmentCapital()" class="confirm" id="addCapitalButton">Add Capital</button>
+                </div>
+
+                <label for="cryptoBuyAmount">Amount to Buy Crypto ($):</label>
+                <input type="number" id="cryptoBuyAmount" placeholder="e.g., 100" oninput="updateCalculatedTokens()">
+
+                <label for="cryptoNameBuy">Crypto Name (e.g., BTC, ETH):</label>
+                <input type="text" id="cryptoNameBuy" placeholder="e.g., BTC">
+
+                <label for="buyPrice">Buy Price:</label>
+                <input type="number" id="buyPrice" placeholder="e.g., 30000" oninput="updateCalculatedTokens()">
+                <div id="calculatedTokens" style="margin-bottom: 15px; font-weight: bold;">You will get: 0 tokens</div>
+
+                <label>Buy Date:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="buyDay" placeholder="Day" style="width: 33%;">
+                    <input type="number" id="buyMonth" placeholder="Month" style="width: 33%;">
+                    <input type="number" id="buyYear" placeholder="Year" style="width: 33%;">
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="buyCrypto()" class="confirm" id="buyCryptoButton">Buy</button>
+                </div>
+            </div>
+
+            <div class="invest-section">
+                <h4>Sell Crypto</h4>
+                <label for="cryptoNameSell">Crypto Name to Sell:</label>
+                <input type="text" id="cryptoNameSell" placeholder="e.g., BTC">
+
+                <label for="sellTokens">Number of Tokens to Sell:</label>
+                <div class="input-with-button">
+                    <input type="number" id="sellTokens" placeholder="e.g., 0.003">
+                    <button type="button" onclick="fillAllTokensToSell()">All</button>
+                </div>
+
+                <label for="sellPrice">Sell Price:</label>
+                <input type="number" id="sellPrice" placeholder="e.g., 35000">
+
+                <label>Sell Date:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="sellDay" placeholder="Day" style="width: 33%;">
+                    <input type="number" id="sellMonth" placeholder="Month" style="width: 33%;">
+                    <input type="number" id="sellYear" placeholder="Year" style="width: 33%;">
+                </div>
+                <div class="modal-buttons">
+                    <button onclick="sellCrypto()" class="confirm" id="sellCryptoButton">Sell</button>
+                </div>
+            </div>
+        </div>
+        
+        <h4 style="margin-top: 20px;">Total Crypto Assets & Capital</h4>
+        <div id="totalAsset" class="history-text" style="height: auto; min-height: 50px;"></div>
+
+        <h4 style="margin-top: 20px;">Investment Transaction History</h4>
+        <div id="investTransactionHistory" class="history-text"></div>
+
+        <div class="modal-buttons" style="margin-top: 20px;">
+            <button onclick="closeInvestModal()" class="cancel" style="width: 100%;">Close</button>
+        </div>
+    </div>
+    <div id="investOverlay" onclick="closeInvestModal()"></div>
+
 
     <h1>Profit Calculator</h1>
     <div class="container">
         <label for="leverage">Leverage:</label>
-        <input type="number" id="leverage" value="5">
+        <input type="number" id="leverage" value="5" oninput="updateMainTokensDisplay()">
 
         <label for="token">Token:</label>
         <input type="text" id="token">
 
         <label for="usdtInvested">USDT Invested:</label>
-        <input type="number" id="usdtInvested">
+        <input type="number" id="usdtInvested" oninput="updateMainTokensDisplay()">
 
         <label>Position:</label>
         <div style="display: flex; gap: 10px;">
-            <input type="number" id="startPosition" placeholder="Start" style="width: 50%;" oninput="updateTokens()">
+            <input type="number" id="startPosition" placeholder="Start" style="width: 50%;" oninput="updateMainTokensDisplay()">
             <input type="number" id="endPosition" placeholder="End" style="width: 50%;">
         </div>        
 
@@ -603,14 +986,13 @@
         <button class="long" onclick="calculateProfit('long')">Long</button>
         <button class="short" onclick="calculateProfit('short')">Short</button>
         <button class="option" onclick="openOptionModal()">Option</button>
-        <button class="undo" onclick="undo()">Undo</button>
+        <button class="invest" onclick="openInvestModal()">Invest</button> <button class="undo" onclick="undo()">Undo</button>
 
     </div>
     <div class="output">
         <div><strong>Cumulative Profit:</strong> <span id="cumulativeProfit" style="color: green;">$0</span></div>
         <div><strong>Volume 30 Days:</strong> <span id="volume30Days">$0</span></div>
-        <div><strong>Tokens:</strong> <span id="totalTokens30Days">0</span></div>
-        <div><strong>Risk:</strong> <span id="riskValue" style="color: red;">0.00</span></div>
+        <div><strong>Tokens:</strong> <span id="mainTotalTokens">0</span></div> <div><strong>Risk:</strong> <span id="riskValue" style="color: red;">0.00</span></div>
     </div>
     <div class="history">
         <h2>Transaction History</h2>
@@ -620,6 +1002,12 @@
     <div class="transfer-history-section">
         <h2>Transfer History</h2>
         <div id="transferHistoryTextSection" class="history-text"></div>
+    </div>
+
+    <div class="invest-history-section">
+        <h2>Investment Portfolio & History</h2>
+        <div id="totalAsset" class="history-text" style="height: auto; min-height: 50px;"></div>
+        <div id="investTransactionHistory" class="history-text"></div>
     </div>
 
 </body>
