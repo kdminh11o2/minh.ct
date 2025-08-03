@@ -298,10 +298,10 @@
 
             if (type === 'long') {
                 profit = ((totalTokens * endPosition) - totalInvestment) - 
-                    ((totalInvestment - usdtInvested) * 0.0009589 * daysDifference);
+                    ((totalInvestment - usdtInvested) * 0.01885392 * daysDifference);
                 risk = (totalInvestment - usdtInvested) / totalTokens;
             } else { // type === 'short'
-                const borrowedAmount = ((totalInvestment - usdtInvested) / startPosition) * 0.00032877 * daysDifference * endPosition;
+                const borrowedAmount = ((totalInvestment - usdtInvested) / startPosition) * 0.015 * daysDifference * endPosition;
                 profit = (totalInvestment - (totalTokens * endPosition)) - borrowedAmount;
                 risk = (totalInvestment + usdtInvested) / totalTokens;
             }
@@ -352,7 +352,7 @@
             const amount = parseFloat(document.getElementById("modalWithdrawAmount").value);
             const withdrawDay = parseInt(document.getElementById("modalWithdrawDay").value);
             const withdrawMonth = parseInt(document.getElementById("modalWithdrawMonth").value);
-            const exchangeRate = parseFloat(document.getElementById("exchangeRate").value) || 24500; // Default exchange rate
+            const exchangeRate = parseFloat(document.getElementById("exchangeRate").value) || 25500; // Default exchange rate
 
             if (isNaN(amount) || isNaN(withdrawDay) || isNaN(withdrawMonth)) {
                 alert("Please ensure all inputs are valid and filled correctly.");
