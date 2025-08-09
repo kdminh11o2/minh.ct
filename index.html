@@ -586,6 +586,19 @@
             clearSellInputs();
         }
 
+        function updateCalculatedSellAmount() {
+            const sellTokens = parseFloat(document.getElementById("sellTokens").value);
+            const sellPrice = parseFloat(document.getElementById("sellPrice").value);
+            const calculatedSellAmountElement = document.getElementById("calculatedSellAmount");
+
+            if (!isNaN(sellTokens) && !isNaN(sellPrice) && sellTokens > 0 && sellPrice > 0) {
+                const amount = sellTokens * sellPrice;
+                calculatedSellAmountElement.innerText = `You will get: $${formatNumber(amount)}`;
+            } else {
+                calculatedSellAmountElement.innerText = "You will get: $0";
+            }
+        }      
+
         function fillAllTokensToSell() {
             const cryptoName = document.getElementById("cryptoNameSell").value.trim().toUpperCase();
             if (cryptoName && investmentPortfolio[cryptoName]) {
@@ -652,6 +665,7 @@
             document.getElementById("sellDay").value = '';
             document.getElementById("sellMonth").value = '';
             document.getElementById("sellYear").value = '';
+            document.getElementById("calculatedSellAmount").innerText = "You will get: $0";
         }
 
         function undo() {
@@ -920,12 +934,13 @@
 
                 <label for="sellTokens">Number of Tokens to Sell:</label>
                 <div class="input-with-button">
-                    <input type="number" id="sellTokens" placeholder="e.g., 0.003">
+                    <input type="number" id="sellTokens" placeholder="e.g., 0.003" oninput="updateCalculatedSellAmount()">
                     <button type="button" onclick="fillAllTokensToSell()">All</button>
                 </div>
 
                 <label for="sellPrice">Sell Price:</label>
-                <input type="number" id="sellPrice" placeholder="e.g., 35000">
+                <input type="number" id="sellPrice" placeholder="e.g., 35000" oninput="updateCalculatedSellAmount()">
+                <div id="calculatedSellAmount" style="margin-bottom: 15px; font-weight: bold;">You will get: $0</div>                
 
                 <label>Sell Date:</label>
                 <div style="display: flex; gap: 10px;">
